@@ -17,7 +17,9 @@
   const esc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const refresh = () => { App.liveSets.forEach(s => s.changed && s.changed()); if (App.layout && App.layout.redraw) App.layout.redraw(); App.emit(); };
   const rd = new jsts.io.GeoJSONReader(), wr = new jsts.io.GeoJSONWriter(), fmt3857 = new ol.format.GeoJSON();
-  const to3857 = g => fmt3857.readGeometry(wr.write(g), { dataProjection: 'EPSG:5186', featureProjection: 'EPSG:3857' });
+  const GF = new jsts.geom.GeometryFactory();
+  const fixRing = g => (g.getGeometryType && g.getGeometryType() === 'LinearRing' ? GF.createLineString(g.getCoordinates()) : g);   // 쓰기 도구가 LinearRing을 못 써서 선으로 바꿈
+  const to3857 = g => fmt3857.readGeometry(wr.write(fixRing(g)), { dataProjection: 'EPSG:5186', featureProjection: 'EPSG:3857' });
   let B = null;        // { blds: [{g, use, name, fl, env}], admins: [{g, name}], site, bbox }
   let groups = [];
 
@@ -145,7 +147,7 @@
     const src = App.src.quiet; src.clear();
     if (!B) return;
     const add = (g, props) => { const f = new ol.Feature(to3857(g)); f.setProperties(props); src.addFeature(f); return f; };
-    add(B.bufG.getBoundary(), { qk: 'buf' });
+    { const bd = B.bufG.getBoundary(); if (bd.getGeometryType() === 'MultiLineString' || bd.getGeometryType() === 'LineString' || bd.getGeometryType() === 'LinearRing') add(bd, { qk: 'buf' }); else for (let i = 0; i < bd.getNumGeometries(); i++) add(bd.getGeometryN(i), { qk: 'buf' }); }
     // 화면 범위 안 건물만 (회색 배경 + 정온시설)
     const view = B.bufG.buffer(150);
     B.blds.forEach(b => { if (b.rep) return; if (!b.cand && !b.env.intersects(view.getEnvelopeInternal())) return; add(b.g, { qk: b.cand ? 'cand' : 'bld' }); });

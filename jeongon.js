@@ -13,7 +13,7 @@
   const PICK = [['01000', '단독주택'], ['02000', '공동주택'], ['10000', '교육연구시설 (학교 등)'], ['09000', '의료시설'], ['11000', '노유자시설'], ['06000', '종교시설'], ['12000', '수련시설'], ['none', '용도 없음 (대장 미등록)']];
   const HOUSE = new Set(['01000', '02000', 'none']);   // 마을로 묶는 용도 (나머지는 시설별로 따로)
   const DIR = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
-  const O = () => { const o = App.opts.quiet = App.opts.quiet || {}; if (o.buf == null) o.buf = 300; if (!o.uses) o.uses = ['01000', '02000', '10000', '09000', '11000', '06000']; if (o.eps == null) o.eps = 40; if (o.minN == null) o.minN = 3; if (!o.names) o.names = {}; if (!o.off) o.off = {}; return o; };
+  const O = () => { const o = App.opts.quiet = App.opts.quiet || {}; if (o.buf == null) o.buf = 300; if (!o.uses) o.uses = ['01000', '02000', '10000', '09000', '11000', '06000']; if (o.eps == null) o.eps = 40; if (o.minN == null) o.minN = 3; if (!o.names) o.names = {}; if (!o.off) o.off = {}; if (o.outOnly == null) o.outOnly = true; return o; };
   const esc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const refresh = () => { App.liveSets.forEach(s => s.changed && s.changed()); if (App.layout && App.layout.redraw) App.layout.redraw(); App.emit(); };
   const rd = new jsts.io.GeoJSONReader(), wr = new jsts.io.GeoJSONWriter(), fmt3857 = new ol.format.GeoJSON();
@@ -68,7 +68,7 @@
       }
       msg.textContent = '행정구역(리·동) 받는 중...';
       const whole = boxes4(b5, Math.max(b5[2] - b5[0], b5[3] - b5[1]) + 1)[0], admins = [];
-      for (const [data, key] of [['LT_C_ADRI', 'li_kor_nm'], ['LT_C_ADEMD_INFO', 'emd_kor_nm']]) {
+      for (const [data, key] of [['LT_C_ADRI_INFO', 'li_kor_nm'], ['LT_C_ADEMD_INFO', 'emd_kor_nm']]) {
         try { (await vw(data, whole)).forEach(f => { try { admins.push({ g: rd.read({ type: f.geometry.type, coordinates: tr4(f.geometry.coordinates) }), name: (f.properties || {})[key] || '', lv: data }); } catch (e) { /* 건너뜀 */ } }); } catch (e) { /* 없어도 진행 */ }
       }
       B = { blds, admins, site, buf, bufG: site.buffer(buf, 16) };
@@ -82,7 +82,7 @@
   // ------------------------------------------------------------ 그룹 만들기
   function areaName(pt) {
     const p = new jsts.geom.GeometryFactory().createPoint(new jsts.geom.Coordinate(pt[0], pt[1]));
-    const li = B.admins.find(a => a.lv === 'LT_C_ADRI' && a.name && a.g.contains(p)); if (li) return li.name;
+    const li = B.admins.find(a => a.lv === 'LT_C_ADRI_INFO' && a.name && a.g.contains(p)); if (li) return li.name;
     const em = B.admins.find(a => a.lv === 'LT_C_ADEMD_INFO' && a.name && a.g.contains(p)); return em ? em.name : '';
   }
   function cluster(items, eps, sameKey) {   // 가까운 건물끼리(eps 이내) 이어서 묶기
@@ -105,7 +105,7 @@
   function regroup() {
     if (!B) return;
     const o = O(), uses = new Set(o.uses);
-    const cand = B.blds.filter(b => uses.has(b.use) && b.g.intersects(B.bufG));
+    const cand = B.blds.filter(b => uses.has(b.use) && b.g.intersects(B.bufG) && !(o.outOnly && B.site.contains(b.g.getInteriorPoint())));   // 지구계 안 건물은 제외 (선택)
     B.blds.forEach(b => { b.cand = false; b.rep = false; }); cand.forEach(b => { b.cand = true; b.d = b.g.distance(B.site); });
     const eps = Math.max(5, Number(o.eps) || 40), minN = Math.max(2, Number(o.minN) || 3);
     const out = [];
@@ -210,6 +210,7 @@
     $('#qEps').addEventListener('change', e => { o.eps = Math.max(5, Number(e.target.value) || 40); re(); });
     $('#qMinN').addEventListener('change', e => { o.minN = Math.max(2, Number(e.target.value) || 3); re(); });
     $('#qFont').addEventListener('input', e => { o.fontPct = Math.max(30, Number(e.target.value) || 100); App.saveOpts(); refresh(); });
+    $('#qOut').checked = o.outOnly !== false; $('#qOut').addEventListener('change', e => { o.outOnly = e.target.checked; re(); });
     $('#qUses').addEventListener('change', e => { const c = e.target.dataset.quse; if (!c) return; o.uses = o.uses.filter(x => x !== c); if (e.target.checked) o.uses.push(c); re(); });
     $('#qTable').addEventListener('change', e => {
       const t = e.target;

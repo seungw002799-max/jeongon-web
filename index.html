@@ -12,7 +12,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>정온시설 위치도 (시험)</title>
 <link rel="stylesheet" href="vendor/ol.css">
-<link rel="stylesheet" href="app.css?v=q2">
+<link rel="stylesheet" href="app.css?v=q3">
 </head>
 <body>
 <header class="topbar">
@@ -196,6 +196,7 @@
           <label class="unit-input"><span class="lbl">검토 범위</span><input type="number" id="qBuf" min="50" step="50"><span class="unit">m</span></label>
           <div class="key-name" style="margin-top:6px">정온시설로 볼 용도</div>
           <div id="qUses" class="q-uses"></div>
+          <label class="check"><input type="checkbox" id="qOut" checked> 지구계 안 건물은 빼기</label>
           <div class="size-row"><label class="unit-input"><span class="lbl">마을 묶음 거리</span><input type="number" id="qEps" min="5" step="5"><span class="unit">m</span></label><span class="icon-gap"></span><label class="unit-input"><span class="lbl">마을 최소</span><input type="number" id="qMinN" min="2" step="1"><span class="unit">동</span></label></div>
           <ul class="bullets"><li>묶음 거리 안에 이어진 주택이 최소 동수 이상이면 마을, 적으면 단독가옥</li><li>학교·병원·교회 등은 시설마다 따로 표시</li></ul>
           <div class="row"><button id="btnQRun" class="btn primary wide" type="button">건물 불러오기 · 그룹 만들기</button></div>
@@ -400,15 +401,15 @@
 <script src="vendor/proj4.js"></script>
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="vendor/jsts.min.js"></script>
-<script src="cad.js?v=q2"></script>
-<script src="backend.js?v=q2"></script>
-<script src="app.js?v=q2"></script>
-<script src="ecvam.js?v=q2"></script>
-<script src="prot.js?v=q2"></script> <script src="target.js?v=q2"></script> <script src="meas.js?v=q2"></script> <script src="lc.js?v=q2"></script> <script src="flow.js?v=q2"></script> <script src="jeongon.js?v=q2"></script>
-  <script src="admin2.js?v=q2"></script>
-  <script src="measure.js?v=q2"></script>
-  <script src="pick.js?v=q2"></script>
-  <script src="project.js?v=q2"></script>
-<script src="app2.js?v=q2"></script>
+<script src="cad.js?v=q3"></script>
+<script src="backend.js?v=q3"></script>
+<script src="app.js?v=q3"></script>
+<script src="ecvam.js?v=q3"></script>
+<script src="prot.js?v=q3"></script> <script src="target.js?v=q3"></script> <script src="meas.js?v=q3"></script> <script src="lc.js?v=q3"></script> <script src="flow.js?v=q3"></script> <script src="jeongon.js?v=q3"></script>
+  <script src="admin2.js?v=q3"></script>
+  <script src="measure.js?v=q3"></script>
+  <script src="pick.js?v=q3"></script>
+  <script src="project.js?v=q3"></script>
+<script src="app2.js?v=q3"></script>
 </body>
 </html>

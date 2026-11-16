@@ -564,3 +564,10 @@ body:not([data-theme="target"]) #elList [data-elkey="table"] { display: none; }
 #flowBox .el-body { display: block; }
 #flowBox .fl-row { grid-template-columns: 18px minmax(130px,1fr) 72px 30px 28px; margin-top: 4px; }
 #flowBox .fl-row .stepper { min-width: 130px; }
+
+/* 정온시설 위치도 */
+.q-uses { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin: 4px 0 8px; font-size: 12px; }
+.q-tbl td { font-size: 11.5px; }
+.q-tbl .q-nm { width: 100%; box-sizing: border-box; font-size: 12px; min-width: 90px; }
+.q-tbl tr.off td { opacity: .45; }
+.q-tbl td:nth-child(3) { white-space: normal; }

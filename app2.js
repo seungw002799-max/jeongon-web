@@ -212,9 +212,10 @@
       (App.theme === 'prot' && App.protLegend ? App.protLegend() : []).filter(p => !hide['p:' + p.id]).forEach(p => { const lk = App.protLook(p); rows.push({ t: lk.name, prot: Object.assign({}, p, { color: lk.color, dash: lk.dash }) }); });
       if (App.theme === 'meas' && App.measLegend) App.measLegend().forEach(r => rows.push(r));
     if (App.theme === 'lc' && App.lcLegend) App.lcLegend().forEach(r => rows.push(r));
+    if (App.theme === 'quiet' && App.quietLegend) App.quietLegend().forEach(r => rows.push(r));
     if ((App.theme === 'target' || App.theme === 'meas') && App.targetLegend) App.targetLegend().filter(r => !hide['t:' + r.t]).forEach(r => rows.push({ t: r.t, prot: { color: r.color, dash: 'solid', id: 't' } }));
     // 행정구역 경계는 범례에 넣지 않음 (보통 범례에 들어가지 않음)
-    if (rows.length === 1 && ['target', 'meas', 'lc'].includes(App.theme)) return null;   // 넣을 항목이 없으면 범례 상자도 안 그림
+    if (rows.length === 1 && ['target', 'meas', 'lc', 'quiet'].includes(App.theme)) return null;   // 넣을 항목이 없으면 범례 상자도 안 그림
       let tw = 0;
       rows.forEach(r => { if (!r.head) tw = Math.max(tw, textW(ctx, r.t, f, false)); });
       // 열 수: 직접 정하거나(1~4), 자동이면 항목이 많을 때(15개 넘음) 2열
@@ -706,6 +707,9 @@
       const [mx, my] = mmFromEvent(e);
       const k = hit(mx, my);
       if (!k) {
+        // 정온시설 이름표 끌기
+        const ql = App.quietLabelHit ? App.quietLabelHit(map, map.getEventPixel(e)) : null;
+        if (ql) { e.stopPropagation(); e.preventDefault(); drag = { qlabel: ql }; return; }
         // 유하방향 화살표 끌기
         const fi = App.flowHit ? App.flowHit(map, map.getEventPixel(e), ppm) : null;
         if (fi != null) { e.stopPropagation(); e.preventDefault(); drag = { flow: fi }; App.flowSelect(fi); return; }
@@ -721,6 +725,7 @@
       redraw();
     }, true);
     window.addEventListener('pointermove', e => {
+      if (drag && drag.qlabel) { App.quietLabelMove(drag.qlabel, map.getCoordinateFromPixel(map.getEventPixel(e))); e.preventDefault(); return; }
       if (drag && drag.flow !== undefined) { App.flowMove(drag.flow, map.getCoordinateFromPixel(map.getEventPixel(e))); e.preventDefault(); return; }
       if (drag && drag.label) {
         const px = map.getEventPixel(e), cc = map.getCoordinateFromPixel(px);
@@ -740,7 +745,7 @@
         paper.style.cursor = (hit(mx, my) || labelHit(e) || (App.flowHit && App.flowHit(map, map.getEventPixel(e), ppm) != null)) ? 'move' : '';
       }
     });
-    window.addEventListener('pointerup', () => { if (drag && drag.flow !== undefined && App.flowDone) App.flowDone(); drag = null; });
+    window.addEventListener('pointerup', () => { if (drag && drag.flow !== undefined && App.flowDone) App.flowDone(); if (drag && drag.qlabel && App.quietSave) App.quietSave(); drag = null; });
     // 명칭 두 번 누르기: 글자 바꾸기 (비우면 원래 이름)
     paper.addEventListener('dblclick', e => {
       if (!active) return;

@@ -39,7 +39,8 @@ const App = {
     sites: new ol.source.Vector(),
     prot: new ol.source.Vector(),
     admin: new ol.source.Vector(),
-    pick: new ol.source.Vector(), target: new ol.source.Vector(), meas: new ol.source.Vector(), lc: new ol.source.Vector(), flow: new ol.source.Vector(),   // 유하방향 화살표 (flow.js)
+    pick: new ol.source.Vector(), target: new ol.source.Vector(), meas: new ol.source.Vector(), lc: new ol.source.Vector(), flow: new ol.source.Vector(), quiet: new ol.source.Vector(),   // 정온시설 위치도 (jeongon.js)
+      // 유하방향 화살표 (flow.js)
       // 토지피복지도 (lc.js)
       // 측정지점 위치도 (meas.js)
       // 대상지역 설정도: 거리 범위 + 하천 (target.js)
@@ -406,13 +407,14 @@ App.createLayerSet = function (getScale, live) {
   set.target = new ol.layer.Vector({ source: App.src.target, zIndex: 5.7, declutter: false, style: f => (App.targetStyle ? App.targetStyle(f, getScale(), set) : null) });
   set.target.on('prerender', onPre);
   set.lc = new ol.layer.VectorImage({ imageRatio: 1.5, source: App.src.lc, zIndex: 2.6, visible: false, style: f => (App.lcStyle ? App.lcStyle(f) : null) });
+  set.quiet = new ol.layer.Vector({ source: App.src.quiet, zIndex: 5.65, declutter: false, style: f => (App.quietStyle ? App.quietStyle(f, getScale()) : null) });
   set.flow = new ol.layer.Vector({ source: App.src.flow, zIndex: 6.45, declutter: false, style: f => (App.flowStyle ? App.flowStyle(f, getScale()) : null) });
   set.meas = new ol.layer.Vector({ source: App.src.meas, zIndex: 6.5, declutter: false, style: (f, res) => (App.measStyle ? App.measStyle(f, getScale(), res) : null) });
   set.arrows = new ol.layer.Vector({
     source: App.src.arrows, zIndex: 6, declutter: false,
     style: (f, res) => (f.get('theme') === App.theme && f.get('on') !== false ? arrowStyle(f, getScale(), res) : null),
   });
-  set.layers = [set.base, set.label, set.lc, set.ecvam, set.around, set.inside, set.prot, set.target, set.admin, set.pick, set.sites, set.arrows, set.flow, set.meas];
+  set.layers = [set.base, set.label, set.lc, set.ecvam, set.around, set.inside, set.prot, set.target, set.admin, set.pick, set.sites, set.arrows, set.flow, set.meas, set.quiet];
   set.errors = 0;
   set.refresh = function (over) {
     const o = Object.assign({}, App.opts, over || {});
@@ -936,15 +938,15 @@ function switchTab(name) {
   $('#tabWork').hidden = name !== 'work';
   $('#tabEco').hidden = name !== 'eco';
   $('#tabProt').hidden = name !== 'prot';
-  const tp = $('#tabPick'); if (tp) tp.hidden = name !== 'pick'; const tt = $('#tabTarget'); if (tt) tt.hidden = name !== 'target'; const tm = $('#tabMeas'); if (tm) tm.hidden = name !== 'meas'; const tlc = $('#tabLc'); if (tlc) tlc.hidden = name !== 'lc';
+  const tp = $('#tabPick'); if (tp) tp.hidden = name !== 'pick'; const tt = $('#tabTarget'); if (tt) tt.hidden = name !== 'target'; const tm = $('#tabMeas'); if (tm) tm.hidden = name !== 'meas'; const tlc = $('#tabLc'); if (tlc) tlc.hidden = name !== 'lc'; const tqq = $('#tabQuiet'); if (tqq) tqq.hidden = name !== 'quiet';
   $('#tabEcvam').hidden = name !== 'ecvam';
   if (name === 'eco' || name === 'prot' || name === 'ecvam') App.setTheme(name);
-  if (name === 'pick') App.setTheme('prot'); if (name === 'meas') App.setTheme('meas'); if (name === 'lc') App.setTheme('lc'); if (name === 'target') { App.setTheme('target'); if (App.targetRefresh) App.targetRefresh(); }
+  if (name === 'pick') App.setTheme('prot'); if (name === 'meas') App.setTheme('meas'); if (name === 'lc') App.setTheme('lc'); if (name === 'quiet') App.setTheme('quiet'); if (name === 'target') { App.setTheme('target'); if (App.targetRefresh) App.targetRefresh(); }
   App.curTab = name;
-  if (name === 'target' || name === 'meas' || name === 'lc') { setEmbedView(name, App.embedView[name]); return; }
+  if (name === 'target' || name === 'meas' || name === 'lc' || name === 'quiet') { setEmbedView(name, App.embedView[name]); return; }
   homeLayout();
   // 대상지역 설정도·측정지점 위치도는 각 탭에서만 출력: 도면 출력 탭으로 오면 원래 주제로
-  if (name === 'layout' && ['target', 'meas', 'lc'].includes(App.theme)) App.setTheme(App.baseTheme || 'eco');
+  if (name === 'layout' && ['target', 'meas', 'lc', 'quiet'].includes(App.theme)) App.setTheme(App.baseTheme || 'eco');
   $('#tabLayout').hidden = name !== 'layout';
   $('#workMapWrap').hidden = name === 'layout';
   $('#paperWrap').hidden = name !== 'layout';
@@ -952,14 +954,14 @@ function switchTab(name) {
   else { if (App.layout) App.layout.leave(); App.workMap.updateSize(); }
 }
 // 대상지역 설정도·측정지점 위치도: 탭 안에서 바로 도면 출력 (작업 지도 / 출력 미리보기 전환)
-App.embedView = { target: 'print', meas: 'print', lc: 'print' };
+App.embedView = { target: 'print', meas: 'print', lc: 'print', quiet: 'print' };
 let layoutHome = null;
 // 탭 안 출력: 섹션 배치. data-mode="work" 작업에서만, "print" 출력에서만, "both" 둘 다 (출력에서는 '요소' 다음, '내보내기' 앞으로 옮김)
 function restoreSections() {
   document.querySelectorAll('[data-mode]').forEach(el => { if (el._home && el._home.parentNode && el.parentNode !== el._home.parentNode) el._home.parentNode.insertBefore(el, el._home.nextSibling); });
 }
 function arrangeSections(name, view) {
-  const tab = $({ target: '#tabTarget', meas: '#tabMeas', lc: '#tabLc' }[name]); if (!tab) return;
+  const tab = $({ target: '#tabTarget', meas: '#tabMeas', lc: '#tabLc', quiet: '#tabQuiet' }[name]); if (!tab) return;
   restoreSections();
   const ex = $('#exportSection');
   tab.querySelectorAll('[data-mode]').forEach(el => {
@@ -979,7 +981,7 @@ function setEmbedView(name, view) {
   App.embedView[name] = view;
   document.querySelectorAll(`[data-embed="${name}"] [data-view]`).forEach(b => b.classList.toggle('on', b.dataset.view === view));
   if (App.curTab !== name) return;
-  const tl = $('#tabLayout'), slot = $({ target: '#tgtLayoutSlot', meas: '#measLayoutSlot', lc: '#lcLayoutSlot' }[name]);
+  const tl = $('#tabLayout'), slot = $({ target: '#tgtLayoutSlot', meas: '#measLayoutSlot', lc: '#lcLayoutSlot', quiet: '#qLayoutSlot' }[name]);
   if (!layoutHome) layoutHome = { parent: tl.parentNode, next: tl.nextSibling };
   if (view === 'print') {
     slot.appendChild(tl); tl.classList.add('embedded'); tl.hidden = false; arrangeSections(name, 'print');
@@ -1098,7 +1100,7 @@ App.theme = 'eco';
 document.body && (document.body.dataset.theme = 'eco');
 App.setTheme = function (t) {
   const prevTheme = App.theme;
-  App.theme = ['prot', 'ecvam', 'target', 'meas', 'lc'].includes(t) ? t : 'eco';
+  App.theme = ['prot', 'ecvam', 'target', 'meas', 'lc', 'quiet'].includes(t) ? t : 'eco';
   if (['eco', 'prot', 'ecvam'].includes(App.theme)) App.baseTheme = App.theme;   // 도면 출력 탭에서 쓰는 주제
   if (prevTheme !== App.theme && App.layout && App.layout.themeSwitch) App.layout.themeSwitch(prevTheme);
   document.body.dataset.theme = App.theme;

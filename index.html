@@ -1,28 +1,37 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<script>
+/* 시험 사이트: 기존 사이트와 같은 주소(github.io)라서 저장 공간을 분리 (인증키 ecoCfg만 함께 씀) */
+(function () { var P = 'jo_', S = Storage.prototype, map = function (k) { return (typeof k === 'string' && /^eco/.test(k) && k !== 'ecoCfg') ? P + k : k; };
+  ['getItem', 'removeItem'].forEach(function (m) { var o = S[m]; S[m] = function (k) { return o.call(this, map(k)); }; });
+  var os = S.setItem; S.setItem = function (k, v) { return os.call(this, map(k), v); };
+  var oo = indexedDB.open.bind(indexedDB); indexedDB.open = function (n, v) { return oo(n === 'ecozm' ? 'jeongon' : n, v); }; })();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>도면 출력 관련</title>
+<title>정온시설 위치도 (시험)</title>
 <link rel="stylesheet" href="vendor/ol.css">
-<link rel="stylesheet" href="app.css?v=20261117d">
+<link rel="stylesheet" href="app.css?v=q1">
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">도면 출력 관련</div>
+  <div class="brand">정온시설 위치도 <small style="font-weight:400;opacity:.7">시험</small></div>
   <nav class="tabs">
-      <button class="tab" data-tab="pick" type="button">초기 입지 검토</button>
+      <button class="tab" hidden data-tab="pick" type="button">초기 입지 검토</button>
+      
+      <button class="tab active" data-tab="work" type="button">도면 (지구계)</button>
       <span class="tab-sep"></span>
-      <button class="tab active" data-tab="work" type="button">도면</button>
-      <span class="tab-sep"></span>
-      <button class="tab" data-tab="target" type="button">대상지역 설정도</button>
-      <button class="tab" data-tab="meas" type="button">측정지점 위치도</button>
-      <span class="tab-sep"></span>
-      <button class="tab" data-tab="lc" type="button">토지피복지도</button>
-      <button class="tab" data-tab="ecvam" type="button">국토환경성평가</button>
-      <button class="tab" data-tab="eco" type="button">생태자연도</button>
-      <button class="tab" data-tab="prot" type="button">레이어 모음</button>
-      <button class="tab" data-tab="layout" type="button">도면 출력</button>
+      <button class="tab" data-tab="quiet" type="button">정온시설 위치도</button>
+      
+      <button class="tab" hidden data-tab="target" type="button">대상지역 설정도</button>
+      <button class="tab" hidden data-tab="meas" type="button">측정지점 위치도</button>
+      
+      <button class="tab" hidden data-tab="lc" type="button">토지피복지도</button>
+      <button class="tab" hidden data-tab="ecvam" type="button">국토환경성평가</button>
+      <button class="tab" hidden data-tab="eco" type="button">생태자연도</button>
+      <button class="tab" hidden data-tab="prot" type="button">레이어 모음</button>
+      <button class="tab" hidden data-tab="layout" type="button">도면 출력</button>
   </nav>
   <div class="topbar-right" id="healthInfo"></div>
 </header>
@@ -178,7 +187,29 @@
       </section>
     </div>
 
-    <!-- ===================== 토지피복지도 탭 ===================== -->
+    <!-- ===================== 정온시설 위치도 탭 ===================== -->
+      <div id="tabQuiet" class="tabpane" hidden>
+        <div class="view-toggle" data-embed="quiet"><button type="button" data-view="map">작업</button><button type="button" data-view="print" class="on">출력</button></div>
+        <section class="card-section" data-mode="work">
+          <h2>정온시설 찾기</h2>
+          <div class="src-note">출처 : 브이월드 건물통합정보 (연속수치지형도 건물 + 건축물대장 용도) <span class="tag">실시간</span></div>
+          <label class="unit-input"><span class="lbl">검토 범위</span><input type="number" id="qBuf" min="50" step="50"><span class="unit">m</span></label>
+          <div class="key-name" style="margin-top:6px">정온시설로 볼 용도</div>
+          <div id="qUses" class="q-uses"></div>
+          <div class="size-row"><label class="unit-input"><span class="lbl">마을 묶음 거리</span><input type="number" id="qEps" min="5" step="5"><span class="unit">m</span></label><span class="icon-gap"></span><label class="unit-input"><span class="lbl">마을 최소</span><input type="number" id="qMinN" min="2" step="1"><span class="unit">동</span></label></div>
+          <ul class="bullets"><li>묶음 거리 안에 이어진 주택이 최소 동수 이상이면 마을, 적으면 단독가옥</li><li>학교·병원·교회 등은 시설마다 따로 표시</li></ul>
+          <div class="row"><button id="btnQRun" class="btn primary wide" type="button">건물 불러오기 · 그룹 만들기</button></div>
+          <div id="qMsg" class="progress" hidden></div>
+        </section>
+        <section class="card-section" data-mode="both">
+          <h2>정온시설 목록</h2>
+          <div id="qTable"></div>
+          <div class="row"><button id="btnQCopy" class="btn small" type="button">표 복사</button><button id="btnQReset" class="btn small" type="button">이름·제외 초기화</button></div>
+          <label class="unit-input"><span class="lbl">이름표 크기</span><input type="number" id="qFont" min="30" step="10"><span class="unit">%</span></label>
+        </section>
+        <div id="qLayoutSlot" class="layout-slot"></div>
+      </div>
+      <!-- ===================== 토지피복지도 탭 ===================== -->
       <div id="tabLc" class="tabpane" hidden>
         <div class="view-toggle" data-embed="lc"><button type="button" data-view="map">작업</button><button type="button" data-view="print" class="on">출력</button></div>
         <section class="card-section">
@@ -369,15 +400,15 @@
 <script src="vendor/proj4.js"></script>
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="vendor/jsts.min.js"></script>
-<script src="cad.js?v=20261117d"></script>
-<script src="backend.js?v=20261117d"></script>
-<script src="app.js?v=20261117d"></script>
-<script src="ecvam.js?v=20261117d"></script>
-<script src="prot.js?v=20261117d"></script> <script src="target.js?v=20261117d"></script> <script src="meas.js?v=20261117d"></script> <script src="lc.js?v=20261117d"></script> <script src="flow.js?v=20261117d"></script>
-  <script src="admin2.js?v=20261117d"></script>
-  <script src="measure.js?v=20261117d"></script>
-  <script src="pick.js?v=20261117d"></script>
-  <script src="project.js?v=20261117d"></script>
-<script src="app2.js?v=20261117d"></script>
+<script src="cad.js?v=q1"></script>
+<script src="backend.js?v=q1"></script>
+<script src="app.js?v=q1"></script>
+<script src="ecvam.js?v=q1"></script>
+<script src="prot.js?v=q1"></script> <script src="target.js?v=q1"></script> <script src="meas.js?v=q1"></script> <script src="lc.js?v=q1"></script> <script src="flow.js?v=q1"></script> <script src="jeongon.js?v=q1"></script>
+  <script src="admin2.js?v=q1"></script>
+  <script src="measure.js?v=q1"></script>
+  <script src="pick.js?v=q1"></script>
+  <script src="project.js?v=q1"></script>
+<script src="app2.js?v=q1"></script>
 </body>
 </html>
